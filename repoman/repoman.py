@@ -111,7 +111,7 @@ def switch_user(config):
         return
 
     if os.getuid() != 0:
-        raise Exception("You must run this as root or", config.get('repoman', 'user'))
+        raise Exception("You must run this as root or {0}".format(config.get('repoman', 'user')))
 
     os.setgroups([])
     os.setgid(wanted_gid)
