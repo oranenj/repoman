@@ -1,4 +1,3 @@
-#!/usr/bin/python -Ott
 from __future__ import print_function
 
 import sys
@@ -398,7 +397,7 @@ def sync_repos(config, args):
         path = os.path.abspath(repo['path'])  # absolute path of repository
 
         # create repo directory
-        make_dir(path, 0775)
+        make_dir(path, 0o0775)
 
         if len(createrepo_cache_root.strip()) > 0:
             createrepo_cache = os.path.join(
