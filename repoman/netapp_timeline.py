@@ -1,4 +1,5 @@
 from .timeline import Timeline
+from datetime import datetime
 import os
 from os import path, symlink
 import requests
@@ -54,21 +55,28 @@ class DummyNetappClient(object):
         os.rmdir(path.join(self.volume, snapshot_name))
 
 class NetappTimeline(Timeline):
-
-    def __init__(self, source, destination):
-        super().__init(name, source, destination, client = None)
-        self._client = client
+    def __init__(self, name, source, destination):
+        super().__init__(name, source, destination)
+        self._client = None # need to call login()
         self._snapshot_path = path.join(source, ".snapshots")
 
         if not path.exists(self._snapshot_path):
             raise Exception("Source '{0}' does not look like a Netapp volume (missing .snapshots directory)".format(source))
 
+    def save(self):
+        # touch a file
+        open(path.join(self._destination, '.netapp.cfg'), 'a').close()
+        tmp = self._client
+        self._client = None
+        super().save()
+        self._client = tmp
+
+    def login(self, filer, user, password, volume):
+        self._client = DummyNetappClient(filer, user, password, volume)
+
     def __str__(self):
         s = super().__str__()
         return s + "\nNetapp\n"
-
-    def get_max_snapshots(self):
-        return 128
 
     def set_excludes(self, excludes):
         pass
@@ -77,18 +85,10 @@ class NetappTimeline(Timeline):
         # unsupported
         return []
 
-    def _save_cfgfile(self):
-        # no configuration to save
-        pass
-
-    def _load_cfgfile(self):
-        # no configuration to load
-        pass
-
-
     def _link_snapshot(self, destination, netapp_snapshot_name):
         target = path.join(self._snapshot_path, netapp_snapshot_name)
-        symlink(target, destination)
+        destination = path.join(self._destination, destination)
+        os.symlink(target, destination)
 
     def create_named_snapshot(self, snapshot, source_snapshot=None):
         now = datetime.now()
@@ -104,8 +104,8 @@ class NetappTimeline(Timeline):
         }
         self._lsnapshots.append(snapshot)
         self.save()
-        netapp_snap_name = "rm-{0}-{1}".format(self.name, snapshot)
-        self._client.create_snapshot(snap_name)
+        netapp_snap_name = "rm-{0}-{1}".format(self._name, snapshot)
+        self._client.create_snapshot(netapp_snap_name)
         self._link_snapshot(snapshot, netapp_snap_name)
 
 
@@ -114,10 +114,14 @@ class NetappTimeline(Timeline):
         self.create_named_snapshot(name)
         self.rotate_snapshots()
 
-    def delete_snapshot(self, snapshot, skip_linked=False):
-        unimplemented()
+    # We need to override this private method only; the delete_snapshot logic in the base class is sufficient
+    def _rm_snapshot(self, snapshot_name, deleted_snapshot):
+        print("Removing snapshot", snapshot_name, deleted_snapshot)
+
+
 
     #   implemented in base class
+    #def delete_snapshot(self, snapshot, skip_linked=False):
     #def expire_snapshots(self, older_than_days, dryrun=False):
     #def create_link(self, link, snapshot=None, max_offset=0, warn_before_max_offset=0):
     #def delete_link(self, link):

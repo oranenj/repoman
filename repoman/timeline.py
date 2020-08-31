@@ -746,7 +746,8 @@ Excludes: {excludes}""".format(**tldata)
                     self.update_link(lk, self._lsnapshots[-link['max_offset']])
 
         # remove oldest snapshot(s)
-        while len(self._lsnapshots) > self._max_snapshots:
+        while len(self._lsnapshots) > self.get_max_snapshots():
+            print(self._lsnapshots)
             self.delete_snapshot(self._lsnapshots[0], skip_linked=True)
 
     def consistency_check(self):

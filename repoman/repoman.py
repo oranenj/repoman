@@ -2,8 +2,10 @@
 
 import logging
 logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('repoman')
 
 import repoman.timeline as timeline
+import repoman.netapp_timeline as netapp_timeline
 import argparse
 import repoman.upstream_sync as upstream_sync
 import configparser as ConfigParser
@@ -16,7 +18,7 @@ from sys import exit
 
 
 def debug(*args):
-    logging.debug(*args)
+    log.debug(*args)
 
 TIMELINE_ROOT = None
 TIMELINE_CLASS = timeline.Timeline
@@ -82,6 +84,7 @@ def make_parser():
 
     tline_create.add_argument('name')
     tline_create.add_argument('source_path')
+    tline_create.add_argument('--netapp', action='store_true', default=False)
     tline_delete.add_argument('timeline')
 
     tline_show.add_argument('timeline')
@@ -133,23 +136,24 @@ def timeline_path(t):
     global TIMELINE_ROOT
     return os.path.normpath(os.path.join(TIMELINE_ROOT, t))
 
-def timeline_load(t):
+def timeline_load(t, config):
     p = timeline_path(t)
-    if os.path.exists(os.path.join(t, '.netapp.cfg')):
+    if os.path.exists(os.path.join(p, '.netapp.cfg')):
+        log.info("Loading NetApp timeline")
         filer = config.get('repoman', 'netapp_filer')
         user = config.get('repoman', 'netapp_user')
         password = config.get('repoman', 'netapp_password')
         volume = config.get('repoman', 'netapp_volume')
 
-        t = netapp_timeline.Timeline.load(p)
+        t = netapp_timeline.NetappTimeline.load(p)
         t.login(filer, user, password, volume)
         return t
     else:
         return timeline.Timeline.load(p)
 
 
-def get_timeline(args):
-    return timeline_load(args.timeline)
+def get_timeline(args, config):
+    return timeline_load(args.timeline, config)
 
 
 def snapshot_exists(t, s):
@@ -182,7 +186,7 @@ def repo_list(args, config):
 
 def snapshot_create(args, config):
     switch_user(config)
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     if not args.name:
         t.create_snapshot()
     else:
@@ -192,13 +196,13 @@ def snapshot_create(args, config):
 def snapshot_delete(args, config):
     global TIMELINE_ROOT
     switch_user(config)
-    t = timeline_load(args.timeline)
+    t = timeline_load(args.timeline, config)
     snap_path = snapshot_path(args.timeline, args.name)
     t.delete_snapshot(snapshot=args.name)
 
 def snapshot_expire(args, config):
     switch_user(config)
-    t = timeline_load(args.timeline)
+    t = timeline_load(args.timeline, config)
     t.expire_snapshots(args.older_than_days, args.dry_run)
 
 
@@ -206,12 +210,12 @@ def snapshot_expire(args, config):
 
 
 def snapshot_list(args, config):
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     t.print_snapshots()
 
 
 def timeline_delete(args, config):
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     print("To delete the timeline, simply run rm -rf '{0}'".format(timeline_path(args.timeline)))
 
 
@@ -241,31 +245,31 @@ def timeline_list(args, config):
 
 
 def timeline_show(args, config):
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     print(t)
 
 
 # link_set
 def link_create(args, config):
     switch_user(config)
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     t.create_link(link=args.link_name, snapshot=args.snapshot, max_offset=args.max_offset)
 
 
 def link_update(args, config):
     switch_user(config)
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     t.update_link(link=args.link_name, snapshot=args.snapshot)
 
 
 def link_delete(args, config):
     switch_user(config)
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     t.delete_link(args.link_name)
 
 
 def link_list(args, config):
-    t = get_timeline(args)
+    t = get_timeline(args, config)
     t.print_links()
 
 # END OF COMMANDS
