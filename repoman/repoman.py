@@ -1,12 +1,12 @@
-from __future__ import print_function
+
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
-import timeline
+from . import repoman.timeline as timeline
 import argparse
-import upstream_sync
-import ConfigParser
+from . import repoman.upstream_sync as upstream_sync
+import configparser as ConfigParser
 import os
 import pwd
 import grp
@@ -19,6 +19,7 @@ def debug(*args):
     logging.debug(*args)
 
 TIMELINE_ROOT = None
+TIMELINE_CLASS = timeline.Timeline
 MIRROR_ROOT = None
 
 
@@ -134,7 +135,7 @@ def timeline_path(t):
 
 
 def get_timeline(args):
-    return timeline.Timeline.load(timeline_path(args.timeline))
+    return TIMELINE_CLASS.load(timeline_path(args.timeline))
 
 
 def snapshot_exists(t, s):

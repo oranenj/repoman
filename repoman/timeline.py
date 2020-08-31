@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 
 # Author: Jan Engels, DESY - IT
 
@@ -11,14 +11,14 @@ import logging.config
 import subprocess
 import pickle
 import pprint
-import ConfigParser
+import configparser as ConfigParser
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 
 def isalnum(string, allowed_extra_chars=''):
     """ check if the given string only contains alpha-numeric characters + optionally allowed extra chars """
 
-    stripped_name = string.translate(None, allowed_extra_chars)
+    stripped_name = string.translate(str.maketrans('', '', allowed_extra_chars))
 
     return stripped_name.isalnum()
 
@@ -140,7 +140,7 @@ Excludes: {excludes}""".format(**tldata)
         return r
 
     def get_latest_snapshot(self):
-        return sorted(self.snapshots.values(), key=attrgetter('created'))[0]
+        return sorted(list(self.snapshots.values()), key=attrgetter('created'))[0]
 
     def set_max_snapshots(self, max_snapshots):
         """ helper method to set max snapshots value """
@@ -153,7 +153,7 @@ Excludes: {excludes}""".format(**tldata)
     def print_snapshots(self):
         print("{0:<20} {1:<20} {2:<35}".format(
             'SNAPSHOT', 'CREATED', 'LINKS'))
-        for v in sorted(self._snapshots.values(), key=itemgetter('created')):
+        for v in sorted(list(self._snapshots.values()), key=itemgetter('created')):
             print("{0:<20} {1:<20} {2:<35}".format(str(os.path.basename(v['path'])), str(
                 v['created'].strftime("%Y.%m.%d-%H%M%S")), ",".join(v['links'])))
 
@@ -242,7 +242,7 @@ Excludes: {excludes}""".format(**tldata)
         self._save_cfgfile()
 
     def _rm_snapshot(self, snapshot, deleted_snapshot):
-        if deleted_snapshot.has_key('diff_log_file'):
+        if 'diff_log_file' in deleted_snapshot:
             self.logger.debug('deleting diff log file [{0}]'.format(
                 deleted_snapshot['diff_log_file']))
             subprocess.check_call(
@@ -598,7 +598,7 @@ Excludes: {excludes}""".format(**tldata)
     def expire_snapshots(self, older_than_days, dryrun=False):
         self.logger.info('expiring snapshots older than %s days', older_than_days)
         to_be_deleted = []
-        for k, v in self._snapshots.items():
+        for k, v in list(self._snapshots.items()):
             if v['created'] < datetime.today() - timedelta(days=older_than_days):
                 if not len(v['links']) == 0:
                     self.logger.info("Skipping snapshot %s due to links", k)
@@ -741,7 +741,7 @@ Excludes: {excludes}""".format(**tldata)
         """
 
         # update all links to be kept pinned within their <max_offset>
-        for lk, link in self._links.items():
+        for lk, link in list(self._links.items()):
             if link['max_offset']:
                 if self._get_snapshot_offset(link['snapshot']) > link['max_offset']:
                     self.update_link(lk, self._lsnapshots[-link['max_offset']])
@@ -754,14 +754,14 @@ Excludes: {excludes}""".format(**tldata)
         """ looks for missing snapshots and missing links and fixes metadata appropriately """
 
         self.logger.info('checking links...')
-        for link in self._links.keys():
+        for link in list(self._links.keys()):
             if not self._valid_link(link, fail_on_disk_check=False):
                 self.logger.warning('deleting invalid link [{0}]'.format(
                     self._links[link]['path']))
                 self.delete_link(link)
 
         self.logger.info('checking snapshots...')
-        for snapshot in self._snapshots.values():
+        for snapshot in list(self._snapshots.values()):
             if not self._valid_snapshot(snapshot, fail_on_disk_check=False):
                 self.logger.warning('deleting invalid snapshot [{0}]'.format(
                     self._snapshots[snapshot]['path']))

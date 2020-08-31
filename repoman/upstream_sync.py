@@ -1,11 +1,11 @@
-from __future__ import print_function
+
 
 import sys
 from optparse import OptionParser, OptionError
 import subprocess
 import os
 import re
-import ConfigParser
+import configparser as ConfigParser
 import getpass
 import OpenSSL
 import datetime
@@ -178,19 +178,19 @@ def sync_cmd_reposync(repo, keep_deleted, newest_only, verbose):
     url = repo['url']
     path = os.path.abspath(repo['path'])
 
-    if repo.has_key('auth'):
+    if 'auth' in repo:
         auth = repo['auth']
         sslcacert = auth['sslcacert']
         sslcert = auth['sslcert']
         sslkey = auth['sslkey']
 
-    if repo.has_key('exclude'):
+    if 'exclude' in repo:
         exclude_list = repo['exclude'].split(',')
         # split() will return an empty list element
         if exclude_list:
             exclude = ' '.join([item.strip() for item in exclude_list])
 
-    if repo.has_key('includepkgs'):
+    if 'includepkgs' in repo:
         include_list = repo['includepkgs'].split(',')
         # split() will return an empty list element
         if include_list:
@@ -227,7 +227,7 @@ def sync_cmd_reposync(repo, keep_deleted, newest_only, verbose):
         logger.warn('unable to detect architecture for %s' % name)
 
     # build options
-    if repo.has_key('sync_opts'):
+    if 'sync_opts' in repo:
         opt_list = repo['sync_opts'].split()
         for opt in opt_list:
             reposync_opts.append(opt)
@@ -259,18 +259,18 @@ def sync_cmd_dnf(repo, keep_deleted, newest_only, verbose):
     path = os.path.abspath(repo['path'])
     dnf_reponame = os.path.basename(path)
 
-    if repo.has_key('auth'):
+    if 'auth' in repo:
         auth = repo['auth']
         dnf_opts.append('--setopt=sslcacert={}'.format(auth['sslcacert']))
         dnf_opts.append('--setopt=sslclientcert={}'.format(auth['sslcert']))
         dnf_opts.append('--setopt=sslclientkey={}'.format(auth['sslkey']))
 
-    if repo.has_key('exclude'):
+    if 'exclude' in repo:
         dnf_opts.extend(('-x', repo['exclude']))
 
     dnf_opts.extend(('--repofrompath', '{0},{1}'.format(dnf_reponame, url)))
 
-    if repo.has_key('sync_opts'):
+    if 'sync_opts' in repo:
         opt_list = repo['sync_opts'].split()
         for opt in opt_list:
             dnf_opts.append(opt)
@@ -313,7 +313,7 @@ def sync_cmd_rsync(repo, keep_deleted, verbose):
 
     rsync_opts = []
     # build options
-    if repo.has_key('sync_opts'):
+    if 'sync_opts' in repo:
         opt_list = repo['sync_opts'].split()
         for opt in opt_list:
             rsync_opts.append(opt)
