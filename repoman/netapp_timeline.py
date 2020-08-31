@@ -56,12 +56,16 @@ class DummyNetappClient(object):
 class NetappTimeline(Timeline):
 
     def __init__(self, source, destination):
-        super().__init(name, source, destination)
-        self._client = DummyNetappClient(filer, user, password, volume_name)
+        super().__init(name, source, destination, client = None)
+        self._client = client
         self._snapshot_path = path.join(source, ".snapshots")
 
         if not path.exists(self._snapshot_path):
             raise Exception("Source '{0}' does not look like a Netapp volume (missing .snapshots directory)".format(source))
+
+    def __str__(self):
+        s = super().__str__()
+        return s + "\nNetapp\n"
 
     def get_max_snapshots(self):
         return 128

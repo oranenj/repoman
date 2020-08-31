@@ -133,9 +133,23 @@ def timeline_path(t):
     global TIMELINE_ROOT
     return os.path.normpath(os.path.join(TIMELINE_ROOT, t))
 
+def timeline_load(t):
+    p = timeline_path(t)
+    if os.path.exists(os.path.join(t, '.netapp.cfg')):
+        filer = config.get('repoman', 'netapp_filer')
+        user = config.get('repoman', 'netapp_user')
+        password = config.get('repoman', 'netapp_password')
+        volume = config.get('repoman', 'netapp_volume')
+
+        t = netapp_timeline.Timeline.load(p)
+        t.login(filer, user, password, volume)
+        return t
+    else:
+        return timeline.Timeline.load(p)
+
 
 def get_timeline(args):
-    return TIMELINE_CLASS.load(timeline_path(args.timeline))
+    return timeline_load(args.timeline)
 
 
 def snapshot_exists(t, s):
@@ -178,13 +192,13 @@ def snapshot_create(args, config):
 def snapshot_delete(args, config):
     global TIMELINE_ROOT
     switch_user(config)
-    t = timeline.Timeline.load(timeline_path(args.timeline))
+    t = timeline_load(args.timeline)
     snap_path = snapshot_path(args.timeline, args.name)
     t.delete_snapshot(snapshot=args.name)
 
 def snapshot_expire(args, config):
     switch_user(config)
-    t = timeline.Timeline.load(timeline_path(args.timeline))
+    t = timeline_load(args.timeline)
     t.expire_snapshots(args.older_than_days, args.dry_run)
 
 
@@ -206,8 +220,12 @@ def timeline_create(args, config):
     name = args.name
     if timeline_exists(name):
         raise ValueError("Timeline already exists")
-    t = timeline.Timeline(name, real_path(
-        args.source_path), timeline_path(name))
+
+    if args.netapp:
+        t = netapp_timeline.NetappTimeline(name, real_path(args.source_path), timeline_path(name))
+    else:
+        t = timeline.Timeline(name, real_path(
+            args.source_path), timeline_path(name))
     debug("Creating timeline at %s from %s",
           timeline_path(name), real_path(args.source_path))
     t.save()
