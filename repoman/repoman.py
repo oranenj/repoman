@@ -3,9 +3,9 @@
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from . import repoman.timeline as timeline
+import repoman.timeline as timeline
 import argparse
-from . import repoman.upstream_sync as upstream_sync
+import repoman.upstream_sync as upstream_sync
 import configparser as ConfigParser
 import os
 import pwd

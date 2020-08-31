@@ -121,7 +121,7 @@ class Timeline:
 
         Timeline.logger.info(
             'loading timeline instance from [{0}]'.format(metadata_file))
-        fh = open(metadata_file, 'r')
+        fh = open(metadata_file, 'rb')
         pickle_data = pickle.load(fh)
 
         # this calls __init__ with the given arguments loaded from the metadata
@@ -261,7 +261,7 @@ Excludes: {excludes}""".format(**tldata)
         """ saves current timeline state into file """
 
         self.logger.debug('saving current timeline state...')
-        fh = open(self._datafile, 'w')
+        fh = open(self._datafile, 'wb')
         #pickle.dump( self, fh )
         d = self.__dict__.copy()  # copy the dict since we will change it
         del d['logger']  # need to delete self.logger due to file object
@@ -273,7 +273,7 @@ Excludes: {excludes}""".format(**tldata)
         """ loads timeline state from file """
 
         self.logger.info('loading timeline state...')
-        fh = open(self._datafile, 'r')
+        fh = open(self._datafile, 'rb')
         self.__dict__.update(pickle.load(fh))
         self.logger.info(
             'timeline state loaded from [{0}]'.format(self._datafile))
@@ -313,13 +313,13 @@ Excludes: {excludes}""".format(**tldata)
                 ':'.join(self._copy_dirs_recursive))
 
         # write configuration file
-        with open(self._cfgfile, 'wb') as cfgfile:
+        with open(self._cfgfile, 'w') as cfgfile:
             cfg.write(cfgfile)
 
         # write excludes file for diff cmd
         diffcfgfile = """# the contents in this file were generated from the settings:\n# copy_files_recursive and copy_dirs_recursive\n\n"""
         if not os.path.exists(self._cfgfile_diff):
-            with open(self._cfgfile_diff, 'wb') as cfgfile:
+            with open(self._cfgfile_diff, 'w') as cfgfile:
                 cfgfile.write(diffcfgfile)
                 if self._copy_dirs_recursive:
                     cfgfile.write('\n'.join(self._copy_dirs_recursive))
@@ -340,10 +340,9 @@ Excludes: {excludes}""".format(**tldata)
         if cfg.has_option('MAIN', 'diff_log_path'):
             self._diff_log_path = cfg.get('MAIN', 'diff_log_path')
         # FIXME ugly hack...
-        self._copy_files_recursive = [i.strip() for i in cfg.get(
-            'ADVANCED', 'copy_files_recursive', '').split(':') if i]
+        self._copy_files_recursive = [i.strip() for i in cfg.get('ADVANCED', 'copy_files_recursive', fallback='').split(':') if i]
         self._copy_dirs_recursive = [i.strip() for i in cfg.get(
-            'ADVANCED', 'copy_dirs_recursive', '').split(':') if i]
+            'ADVANCED', 'copy_dirs_recursive', fallback='').split(':') if i]
 
     def _initialize_repository_options(self):
         """ this options are specific to repositories only """
