@@ -1,5 +1,6 @@
-from timeline import Timeline
-from os import path
+from .timeline import Timeline
+import os
+from os import path, symlink
 import requests
 
 
@@ -39,40 +40,83 @@ class NetappClient(object):
     def delete_snapshot(self, snapshot_name):
         unimplemented()
 
+class DummyNetappClient(object):
+    def __init__(self, filer, user, password, volume_name):
+        self.volume = path.join(filer, volume_name)
+        
+    def list_snapshots(self):
+        return listdir(self.volume)
+
+    def create_snapshot(self, snapshot_name):
+        os.mkdir(path.join(self.volume, snapshot_name))
+
+    def delete_snapshot(self, snapshot_name):
+        os.rmdir(path.join(self.volume, snapshot_name))
+
 class NetappTimeline(Timeline):
 
-    def __init__(self, source):
-        # destination is *only* used to store the timeline configuration
-        destination = path.join(source, '.timeline_config')
+    def __init__(self, source, destination):
         super().__init(name, source, destination)
+        self._client = DummyNetappClient(filer, user, password, volume_name)
+        self._snapshot_path = path.join(source, ".snapshots")
+
+        if not path.exists(self._snapshot_path):
+            raise Exception("Source '{0}' does not look like a Netapp volume (missing .snapshots directory)".format(source))
 
     def get_max_snapshots(self):
         return 128
+
     def set_excludes(self, excludes):
-        unimplemented()
+        pass
+
     def get_excludes(self):
-        unimplemented()
+        # unsupported
+        return []
+
+    def _save_cfgfile(self):
+        # no configuration to save
+        pass
+
+    def _load_cfgfile(self):
+        # no configuration to load
+        pass
+
+
+    def _link_snapshot(self, destination, netapp_snapshot_name):
+        target = path.join(self._snapshot_path, netapp_snapshot_name)
+        symlink(target, destination)
+
     def create_named_snapshot(self, snapshot, source_snapshot=None):
-        unimplemented()
+        now = datetime.now()
+        if source_snapshot:
+            raise Exception("Specifying a source snapshot is unsupported")
+        self._check_frozen()
+
+        snapshot_path = os.path.join(self._destination, snapshot)
+        self._snapshots[snapshot] = {
+                'created': now,
+                'path': snapshot_path,
+                'links': []
+        }
+        self._lsnapshots.append(snapshot)
+        self.save()
+        netapp_snap_name = "rm-{0}-{1}".format(self.name, snapshot)
+        self._client.create_snapshot(snap_name)
+        self._link_snapshot(snapshot, netapp_snap_name)
+
 
     def create_snapshot(self, random_sleep_before_snapshot=None, sleep_after_snapshot=None):
-        unimplemented()
+        name = datetime.now().strftime("%Y.%m.%d-%H%M%S")
+        self.create_named_snapshot(name)
+        self.rotate_snapshots()
 
     def delete_snapshot(self, snapshot, skip_linked=False):
         unimplemented()
 
-    def expire_snapshots(self, older_than_days, dryrun=False):
-        unimplemented()
-
-    def create_link(self, link, snapshot=None, max_offset=0, warn_before_max_offset=0):
-        unimplemented()
-
-    def delete_link(self, link):
-        unimplemented()
-
-    def update_link(self, link, snapshot=None):
-        unimplemented()
-
-    def rotate_snapshots(self):
-        unimplemented()
+    #   implemented in base class
+    #def expire_snapshots(self, older_than_days, dryrun=False):
+    #def create_link(self, link, snapshot=None, max_offset=0, warn_before_max_offset=0):
+    #def delete_link(self, link):
+    #def update_link(self, link, snapshot=None):
+    #def rotate_snapshots(self):
 
