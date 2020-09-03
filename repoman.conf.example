@@ -11,6 +11,13 @@ newest_only = true
 user=apache
 group=apache
 
+# netapp support; optional
+# needs permission to list volumes and snapshots and create and delete snapshots
+netapp_filer = 10.20.30.40
+netapp_user = myuser
+netapp_password = mypassword
+netapp_volume = myvolume
+
 [auth/rhel-server]
 sslcacert=/etc/rhsm/ca/redhat-uep.pem
 sslcert=/etc/repoman/rhn-cert-rhel-server.pem
