@@ -153,6 +153,8 @@ def config_repos(config, args):
         repo = dict(repoconfig.items(title))
         if 'createrepo' in repo:
             repo['createrepo'] = repoconfig.getboolean(title, 'createrepo')
+        if 'newest_only' in repo:
+            repo['newest_only'] = repoconfig.getboolean(title, 'newest_only')
         repo['name'] = title
         repo['path'] = os.path.join(config.get('repoman', 'mirror_root'), repo[
                                     'path'])  # absolute path of repository
@@ -394,7 +396,7 @@ def sync_repos(config, args):
     createrepo_cache_root = config.get('repoman', 'createrepo_cache_root')
     createrepo_exec = [config.get('repoman', 'createrepo_bin')]
     keep_deleted = config.getboolean('repoman', 'sync_keep_deleted')
-    newest_only = config.getboolean('repoman', 'newest_only')
+    newest_only_default = config.getboolean('repoman', 'newest_only')
     tmp_dir = config.get('repoman', 'tmp_dir')
 
     repos = config_repos(config, args)
@@ -403,6 +405,7 @@ def sync_repos(config, args):
         url = repo['url']
         name = repo['name']
         createrepo = repo.get('createrepo', createrepo_default)
+        newest_only = repo.get('newest_only', newest_only_default)
         path = os.path.abspath(repo['path'])  # absolute path of repository
 
         # create repo directory
@@ -455,7 +458,7 @@ def sync_repos(config, args):
             continue
 
         # preform sync - rhnget/rsync
-        logger.info('syncing %s, cmd: %s' % name, " ".join(sync_cmd))
+        logger.info('syncing %s, cmd: %s' % (name, " ".join(sync_cmd)))
         if args.verbose:
             stdout_pipe = sys.stdout
             stderr_pipe = sys.stderr
