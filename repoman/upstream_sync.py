@@ -253,6 +253,7 @@ def sync_cmd_dnf(repo, keep_deleted, newest_only, verbose):
     exclude = None
 
     dnf_opts = ['--disablerepo=*', '--refresh']
+    reposync_opts = []
 
     name = repo['name']
     url = re.sub('^dnf::', '', repo['url'])
@@ -273,13 +274,19 @@ def sync_cmd_dnf(repo, keep_deleted, newest_only, verbose):
     if 'sync_opts' in repo:
         opt_list = repo['sync_opts'].split()
         for opt in opt_list:
-            dnf_opts.append(opt)
+            reposync_opts.append(opt)
+    else:
+        reposync_opts.append('--download-metadata')
+        if newest_only:
+            reposync_opts.append('--newest-only')
+
+
 
     # be quiet if verbose is not set
     if not verbose:
         dnf_opts.append('-q')
 
-    sync_cmd = ['dnf'] + dnf_opts + ['reposync', '-p', os.path.dirname(path)]
+    sync_cmd = ['dnf'] + dnf_opts + ['reposync', '-p', os.path.dirname(path)] + reposync_opts
     return sync_cmd
 
 
