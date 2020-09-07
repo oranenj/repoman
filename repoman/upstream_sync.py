@@ -279,6 +279,8 @@ def sync_cmd_dnf(repo, keep_deleted, newest_only, verbose):
         reposync_opts.append('--download-metadata')
         if newest_only:
             reposync_opts.append('--newest-only')
+        if not keep_deleted:
+            reposync_opts.append('--delete')
 
 
 
@@ -453,7 +455,7 @@ def sync_repos(config, args):
             continue
 
         # preform sync - rhnget/rsync
-        logger.info('syncing %s' % name)
+        logger.info('syncing %s, cmd: %s' % name, " ".join(sync_cmd))
         if args.verbose:
             stdout_pipe = sys.stdout
             stderr_pipe = sys.stderr
