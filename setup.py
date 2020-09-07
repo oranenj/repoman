@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
         name='repoman',
-        version='0.4.0',
+        version='0.4.2',
         author='Jarkko Oranen',
         author_email='oranenj@iki.fi',
         long_description='',
