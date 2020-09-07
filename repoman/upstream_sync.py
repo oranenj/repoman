@@ -196,7 +196,7 @@ def sync_cmd_reposync(repo, keep_deleted, newest_only, verbose):
         if include_list:
             includepkgs = ' '.join([item.strip() for item in include_list])
 
-    yum_conf = tempfile.NamedTemporaryFile(prefix='repoman.tmp', delete=True)
+    yum_conf = tempfile.NamedTemporaryFile(mode='w+', prefix='repoman.tmp', encoding='utf-8', delete=True)
     tmppath = yum_conf.name
     build_yum_config(yum_conf, name, url, sslcacert, sslcert, sslkey, exclude, includepkgs)
 
